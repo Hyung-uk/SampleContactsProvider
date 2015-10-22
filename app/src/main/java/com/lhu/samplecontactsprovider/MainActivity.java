@@ -6,6 +6,9 @@ import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
@@ -16,9 +19,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
+import android.support.v4.widget.SimpleCursorAdapter;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
     ListView listView;
     EditText keywordView;
     SimpleCursorAdapter mAdapter;
@@ -67,6 +70,8 @@ public class MainActivity extends AppCompatActivity {
         int[] to = {android.R.id.text1};
         mAdapter = new SimpleCursorAdapter(this, android.R.layout.simple_list_item_1, null, from, to, 0);
         listView.setAdapter(mAdapter);
+
+        getSupportLoaderManager().initLoader(0, null, this);
     }
 
     private void getContacts(String keyword) {
@@ -84,14 +89,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        getContacts(null);
+     //   getContacts(null);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
 
-        mAdapter.changeCursor(null);
+       // mAdapter.changeCursor(null);
     }
 
     @Override
@@ -114,5 +119,30 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public Loader onCreateLoader(int id, Bundle args) {
+        Uri uri = ContactsContract.Contacts.CONTENT_URI;
+
+        if (args != null) {
+            String keyword = args.getString("keyword");
+
+            if (!TextUtils.isEmpty(keyword)) {
+                uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_FILTER_URI, Uri.encode(keyword));
+            }
+        }
+        return new CursorLoader(this, uri, projection, selection, null, sortOrder);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        mAdapter.swapCursor(data);
+    }
+
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        mAdapter.swapCursor(null);
     }
 }
